@@ -13,7 +13,7 @@ def pathHandler(path, body):
 
 class main_server(BaseHTTPRequestHandler):
     def do_GET(self):
-        body = None
+        body = ""
         if self.headers.get('Content-Length'):
             content_len = int(self.headers.get('Content-Length'))
             post_body = self.rfile.read(content_len)
