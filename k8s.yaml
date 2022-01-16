@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s_capacity
+  labels:
+    app: k8s_capacity
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: k8s_capacity
+  template:
+    metadata:
+      labels:
+        app: k8s_capacity
+    spec:
+      containers:
+      - name: k8s_capacity
+        image: ilmal/k8s-capacity-api:latest
+        ports:
+        - containerPort: 3000

@@ -8,7 +8,7 @@ from getCapacity import getCapacityFunc
 
 def pathHandler(path, body):
     if "getCapacity" in path:
-        getCapacityFunc(body)
+        return getCapacityFunc(body)
 
 
 class main_server(BaseHTTPRequestHandler):
@@ -19,7 +19,12 @@ class main_server(BaseHTTPRequestHandler):
             post_body = self.rfile.read(content_len)
             body = json.loads(post_body)
 
-        pathHandler(self.path, body)
+        self.send_response(200)
+        self.send_header('Content-type', 'json')
+        self.end_headers()
+
+        self.wfile.write(
+            bytes(json.dumps(pathHandler(self.path, body)), "utf8"))
 
 
 def main():
