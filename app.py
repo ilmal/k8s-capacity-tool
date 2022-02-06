@@ -28,7 +28,7 @@ class main_server(BaseHTTPRequestHandler):
 
 
 def main():
-    PORT = 3000
+    PORT = 3001
     server = HTTPServer(("", PORT), main_server)
     print("Server running on port: ", PORT)
     server.serve_forever()

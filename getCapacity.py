@@ -1,9 +1,11 @@
 import requests
 import json
 import math
+from pymongo import Connection
 
 default_data = {
     "kubeAPI": "http://192.168.1.2:8081",
+    "mongoDB": "mongodb://192.168.1.2:31007/",
     "reqData": {
         "cpu": 1500,
         "mem": 2
@@ -38,10 +40,16 @@ def sortNodes(nodesRaw):
     return (returnArr)
 
 
-def sortPods(podsRaw):
+def sortPods(podsRaw, data):
     returnArr = []
+    runningServers = 0
+    activeServers = 0
 
     for pod in podsRaw["items"]:
+        # only getting server pods
+        if "mc-server-" not in pod["metadata"]["name"]:
+            continue
+        runningServers += 1
         cpu = int(pod["spec"]["containers"][0]["resources"]
                   ["limits"]["cpu"].replace("m", "")) * 1000
         mem = int(pod["spec"]["containers"][0]["resources"]
@@ -59,13 +67,38 @@ def sortPods(podsRaw):
             "nodeName": nodeName
         })
 
+    # mongoClient = Connection("mongodb://192.168.1.2:31007/")
+    # for user in mongoClient["user"]["userschemas"].find():
+    #     activeServers += len(user["servers"])
+
+    # check if active servers (servers that are bought and not too old) and running servers (servers currently running) are equal, if not, re calculate and use active servers metic
+    # currently not implemented, remove option to delete pods instead
+    if activeServers == runningServers or True:
+        return(returnArr)
+
+    returnArr = []
+
+    print("activeServers: ", activeServers,
+          " runningServers: ", runningServers)
+
+    for user in mongoClient["user"]["userschemas"].find():
+        for server in user["servers"]:
+            for product in mongoClient["user"]["products"].find():
+                cpu = product[server["plan"].lower()]["cpuLim"]
+                mem = product[server["plan"].lower()]["memLim"]
+                returnArr.append({
+                    "cpu": cpu,
+                    "mem": mem,
+                    "nodeName": None
+                })
+
     return(returnArr)
 
 
 def calcFreeSpace(nodeList, podList, data):
     capLeft = {}
 
-    for node in nodeList:  # calculating capacity left in cluster
+    for node in nodeList:  # calculating capacity in cluster
         capLeft[node["nodeName"]] = {
             "cpu": node["cpu"],
             "mem": node["mem"]
@@ -124,12 +157,12 @@ def getCapacityFunc(input_data):
         data["kubeAPI"] + "/api/v1/namespaces/mc-servers/pods")
     pods_parsed = json.loads(podsRaw.text)
 
-    print("sortPods: ", sortPods(pods_parsed))
+    print("sortPods: ", sortPods(pods_parsed, data))
 
     print("RESULT: ", calcFreeSpace(
-        sortNodes(nodes_parsed), sortPods(pods_parsed), data))
+        sortNodes(nodes_parsed), sortPods(pods_parsed, data), data))
 
     return calcFreeSpace(
-        sortNodes(nodes_parsed), sortPods(pods_parsed), data)
+        sortNodes(nodes_parsed), sortPods(pods_parsed, data), data)
 
     print(json.dumps(parsed, indent=4, sort_keys=True))
